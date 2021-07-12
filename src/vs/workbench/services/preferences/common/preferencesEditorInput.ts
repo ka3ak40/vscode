@@ -9,34 +9,13 @@ import { ITextModelService } from 'vs/editor/common/services/resolverService';
 import * as nls from 'vs/nls';
 import { IFileService } from 'vs/platform/files/common/files';
 import { ILabelService } from 'vs/platform/label/common/label';
-import { IEditorInput, IUntypedEditorInput, Verbosity } from 'vs/workbench/common/editor';
+import { IEditorInput, IUntypedEditorInput } from 'vs/workbench/common/editor';
 import { EditorInput } from 'vs/workbench/common/editor/editorInput';
-import { SideBySideEditorInput } from 'vs/workbench/common/editor/sideBySideEditorInput';
 import { TextResourceEditorInput } from 'vs/workbench/common/editor/textResourceEditorInput';
 import { IEditorService } from 'vs/workbench/services/editor/common/editorService';
 import { IPreferencesService } from 'vs/workbench/services/preferences/common/preferences';
 import { Settings2EditorModel } from 'vs/workbench/services/preferences/common/preferencesModels';
 import { ITextFileService } from 'vs/workbench/services/textfile/common/textfiles';
-
-export class PreferencesEditorInput extends SideBySideEditorInput {
-	static override readonly ID: string = 'workbench.editorinputs.preferencesEditorInput';
-
-	override get typeId(): string {
-		return PreferencesEditorInput.ID;
-	}
-
-	override get editorId(): string | undefined {
-		return this.typeId;
-	}
-
-	override getTitle(verbosity: Verbosity): string {
-		return this.primary.getTitle(verbosity);
-	}
-
-	override matches(otherInput: IEditorInput | IUntypedEditorInput): boolean {
-		return super.matches(otherInput) || this.primary.matches(otherInput);
-	}
-}
 
 export class DefaultPreferencesEditorInput extends TextResourceEditorInput {
 	static override readonly ID = 'workbench.editorinputs.defaultpreferences';
