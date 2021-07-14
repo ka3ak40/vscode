@@ -203,6 +203,7 @@ export interface IPreferencesService {
 	workspaceSettingsResource: URI | null;
 	getFolderSettingsResource(resource: URI): URI | null;
 
+	createPreferencesEditorModel<T>(uri: URI): Promise<IPreferencesEditorModel<T> | null>;
 	resolveModel(uri: URI): Promise<ITextModel | null>;
 	createSettings2EditorModel(): Settings2EditorModel; // TODO
 

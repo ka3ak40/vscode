@@ -164,7 +164,7 @@ export class PreferencesService extends Disposable implements IPreferencesServic
 		return Promise.resolve(null);
 	}
 
-	private async createPreferencesEditorModel(uri: URI): Promise<IPreferencesEditorModel<any> | null> {
+	public async createPreferencesEditorModel(uri: URI): Promise<IPreferencesEditorModel<any> | null> {
 		if (this.isDefaultSettingsResource(uri)) {
 			return this.createDefaultSettingsEditorModel(uri);
 		}

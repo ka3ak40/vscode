@@ -11,10 +11,15 @@ import { HistoryInputBox, IHistoryInputOptions } from 'vs/base/browser/ui/inputb
 import { Widget } from 'vs/base/browser/ui/widget';
 import { Action, IAction } from 'vs/base/common/actions';
 import { Emitter, Event } from 'vs/base/common/event';
+import { MarkdownString } from 'vs/base/common/htmlContent';
 import { KeyCode } from 'vs/base/common/keyCodes';
+import { Disposable } from 'vs/base/common/lifecycle';
 import { Schemas } from 'vs/base/common/network';
 import { isEqual } from 'vs/base/common/resources';
 import { URI } from 'vs/base/common/uri';
+import { IMarginData } from 'vs/editor/browser/controller/mouseTarget';
+import { ICodeEditor, IEditorMouseEvent, MouseTargetType } from 'vs/editor/browser/editorBrowser';
+import { IModelDeltaDecoration, TrackedRangeStickiness } from 'vs/editor/common/model';
 import { localize } from 'vs/nls';
 import { ContextScopedHistoryInputBox } from 'vs/platform/browser/contextScopedHistoryWidget';
 import { ConfigurationTarget } from 'vs/platform/configuration/common/configuration';
@@ -27,7 +32,7 @@ import { attachInputBoxStyler, attachStylerCallback } from 'vs/platform/theme/co
 import { IColorTheme, ICssStyleCollector, IThemeService, registerThemingParticipant, ThemeIcon } from 'vs/platform/theme/common/themeService';
 import { isWorkspaceFolder, IWorkspaceContextService, IWorkspaceFolder, WorkbenchState } from 'vs/platform/workspace/common/workspace';
 import { PANEL_ACTIVE_TITLE_BORDER, PANEL_ACTIVE_TITLE_FOREGROUND, PANEL_INACTIVE_TITLE_FOREGROUND } from 'vs/workbench/common/theme';
-import { settingsScopeDropDownIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
+import { settingsEditIcon, settingsScopeDropDownIcon } from 'vs/workbench/contrib/preferences/browser/preferencesIcons';
 import { IWorkbenchEnvironmentService } from 'vs/workbench/services/environment/common/environmentService';
 import { IPreferencesService } from 'vs/workbench/services/preferences/common/preferences';
 
@@ -478,6 +483,71 @@ export class SearchWidget extends Widget {
 		if (this.options.focusKey) {
 			this.options.focusKey.set(false);
 		}
+		super.dispose();
+	}
+}
+
+export class EditPreferenceWidget<T> extends Disposable {
+
+	private _line: number = -1;
+	private _preferences: T[] = [];
+
+	private _editPreferenceDecoration: string[];
+
+	private readonly _onClick = this._register(new Emitter<IEditorMouseEvent>());
+	readonly onClick: Event<IEditorMouseEvent> = this._onClick.event;
+
+	constructor(private editor: ICodeEditor) {
+		super();
+		this._editPreferenceDecoration = [];
+		this._register(this.editor.onMouseDown((e: IEditorMouseEvent) => {
+			const data = e.target.detail as IMarginData;
+			if (e.target.type !== MouseTargetType.GUTTER_GLYPH_MARGIN || data.isAfterLines || !this.isVisible()) {
+				return;
+			}
+			this._onClick.fire(e);
+		}));
+	}
+
+	get preferences(): T[] {
+		return this._preferences;
+	}
+
+	getLine(): number {
+		return this._line;
+	}
+
+	show(line: number, hoverMessage: string, preferences: T[]): void {
+		this._preferences = preferences;
+		const newDecoration: IModelDeltaDecoration[] = [];
+		this._line = line;
+		newDecoration.push({
+			options: {
+				description: 'edit-preference-widget-decoration',
+				glyphMarginClassName: ThemeIcon.asClassName(settingsEditIcon),
+				glyphMarginHoverMessage: new MarkdownString().appendText(hoverMessage),
+				stickiness: TrackedRangeStickiness.NeverGrowsWhenTypingAtEdges,
+			},
+			range: {
+				startLineNumber: line,
+				startColumn: 1,
+				endLineNumber: line,
+				endColumn: 1
+			}
+		});
+		this._editPreferenceDecoration = this.editor.deltaDecorations(this._editPreferenceDecoration, newDecoration);
+	}
+
+	hide(): void {
+		this._editPreferenceDecoration = this.editor.deltaDecorations(this._editPreferenceDecoration, []);
+	}
+
+	isVisible(): boolean {
+		return this._editPreferenceDecoration.length > 0;
+	}
+
+	override dispose(): void {
+		this.hide();
 		super.dispose();
 	}
 }
